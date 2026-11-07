@@ -17,6 +17,12 @@ if (loginMicrosoftAtivo) {
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
       tenantId: process.env.AZURE_AD_TENANT_ID,
+      // Contas corporativas nem sempre trazem a claim "email": usa o login (UPN) como e-mail.
+      // Também evita baixar a foto do Graph, que deixaria o cookie de sessão grande demais.
+      profile(p: { sub: string; name?: string; email?: string; preferred_username?: string; upn?: string }) {
+        const email = (p.email ?? p.preferred_username ?? p.upn ?? "").toLowerCase();
+        return { id: p.sub, name: p.name ?? email, email, image: null };
+      },
     }),
   );
 }
