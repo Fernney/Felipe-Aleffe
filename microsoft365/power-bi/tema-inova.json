@@ -1,0 +1,85 @@
+{
+  "name": "INOVA BH · Central de Diligenciamento",
+  "dataColors": [
+    "#0D5A55",
+    "#95C11F",
+    "#706F6F",
+    "#4E8C2A",
+    "#3E8B85",
+    "#C3DD7A",
+    "#A9A8A8",
+    "#08403C"
+  ],
+  "foreground": "#2B2530",
+  "foregroundNeutralSecondary": "#5F5868",
+  "foregroundNeutralTertiary": "#737373",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F4F3F7",
+  "backgroundNeutral": "#E4E1EA",
+  "tableAccent": "#0D5A55",
+  "good": "#0B6B66",
+  "neutral": "#8A5300",
+  "bad": "#B3261E",
+  "maximum": "#0D5A55",
+  "center": "#95C11F",
+  "minimum": "#F4F3F7",
+  "hyperlink": "#0D5A55",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#E4E1EA"
+              }
+            },
+            "radius": 14
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ],
+        "title": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#2B2530"
+              }
+            },
+            "fontSize": 12,
+            "fontFamily": "Segoe UI Semibold"
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F4F3F7"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    }
+  }
+}

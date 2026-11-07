@@ -1,0 +1,254 @@
+# Central de Diligenciamento · Tela "Risco" (container dentro de scrHome)
+# Copie a partir da linha "- Tela_Risco:" e cole sobre scrHome no Power Apps Studio.
+# Depende de: colRisco (03-btnDashCarregar…), tblRisco e tokens de cor (01-App.Formulas).
+- Tela_Risco:
+    Control: GroupContainer@1.5.0
+    Variant: ManualLayout
+    Properties:
+      Fill: =corFundo
+      Height: =Parent.Height - Self.Y - 16
+      Visible: =varMenuSelecionado = "Risco"
+      Width: =Parent.Width - galMenu.Width - 45
+      X: =galMenu.Width + 28
+      Y: =129
+    Children:
+      - lblRiTitulo:
+          Control: ModernText@1.0.0
+          Properties:
+            Color: =corTexto
+            Font: =fontePadrao
+            FontWeight: =FontWeight.Bold
+            Height: =40
+            Size: =20
+            Text: ="Risco e previsão de liberação"
+            Width: =Parent.Width - 420
+            X: =8
+      - lblRiSub:
+          Control: ModernText@1.0.0
+          Properties:
+            Color: =corTextoSecundario
+            Font: =fontePadrao
+            Height: =24
+            Size: =9
+            Text: |-
+              ="Índice de 0 a 100: alertas críticos, módulos bloqueados, processos a abrir, conflitos do fluxograma e previsão após o prazo"
+            Width: =Parent.Width - 420
+            X: =8
+            Y: =32
+      - galRiFiltro:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0
+          Properties:
+            Height: =40
+            Items: =["Todos", "Alto", "Médio", "Baixo"]
+            ShowScrollbar: =false
+            TemplatePadding: =3
+            TemplateSize: =40
+            Width: =400
+            WrapCount: =4
+            X: =Parent.Width - Self.Width - 8
+            Y: =10
+          Children:
+            - btnRiFiltro:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =If(Coalesce(varFiltroRisco, "Todos") = ThisItem.Value, corPrimaria, corBordaCampo)
+                  BorderThickness: =1
+                  Color: =If(Coalesce(varFiltroRisco, "Todos") = ThisItem.Value, corSobrePrimaria, corTextoSecundario)
+                  Fill: =If(Coalesce(varFiltroRisco, "Todos") = ThisItem.Value, corPrimariaPreench, corCartao)
+                  Font: =fontePadrao
+                  FontWeight: =FontWeight.Semibold
+                  Height: =Parent.TemplateHeight - 6
+                  HoverFill: =corHoverVeu
+                  OnSelect: =Set(varFiltroRisco, ThisItem.Value)
+                  RadiusBottomLeft: =raioBotao
+                  RadiusBottomRight: =raioBotao
+                  RadiusTopLeft: =raioBotao
+                  RadiusTopRight: =raioBotao
+                  Size: =10
+                  Text: =ThisItem.Value & " (" & CountRows(Filter(colRisco, (IsBlank(cboConcessionaria.Selected.Value) || Conc = cboConcessionaria.Selected.Value) && (ThisItem.Value = "Todos" || Nivel = ThisItem.Value))) & ")"
+                  Width: =Parent.TemplateWidth - 6
+      - contRiLista:
+          Control: GroupContainer@1.5.0
+          Variant: ManualLayout
+          Properties:
+            BorderColor: =corBorda
+            BorderThickness: =1
+            DropShadow: =DropShadow.None
+            Fill: =corCartao
+            Height: =Parent.Height - Self.Y - 8
+            RadiusBottomLeft: =raioCartao
+            RadiusBottomRight: =raioCartao
+            RadiusTopLeft: =raioCartao
+            RadiusTopRight: =raioCartao
+            Width: =Parent.Width - 16
+            X: =8
+            Y: =68
+          Children:
+            - galRiLista:
+                Control: Gallery@2.15.0
+                Variant: BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0
+                Properties:
+                  Height: =Parent.Height - 8
+                  Items: |-
+                    =SortByColumns(
+                        Filter(
+                            colRisco,
+                            (IsBlank(cboConcessionaria.Selected.Value) || Conc = cboConcessionaria.Selected.Value) &&
+                            (Coalesce(varFiltroRisco, "Todos") = "Todos" || Nivel = varFiltroRisco)
+                        ),
+                        "Risco", SortOrder.Descending
+                    )
+                  OnSelect: |-
+                    =Set(varTerrenoSelecionado, LookUp(Terrenos, ID = galRiLista.Selected.TId));
+                    Navigate(scrDetalheTerreno, ScreenTransition.Fade)
+                  TemplatePadding: =0
+                  TemplateSize: =84
+                  Width: =Parent.Width - 8
+                  X: =4
+                  Y: =4
+                Children:
+                  - lblRiNome:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Color: =corTexto
+                        Font: =fontePadrao
+                        FontWeight: =FontWeight.Bold
+                        Height: =24
+                        OnSelect: =Select(Parent)
+                        Size: =11
+                        Text: =ThisItem.Nome
+                        Width: =Parent.TemplateWidth * 0.40
+                        X: =16
+                        Y: =8
+                  - lblRiUnidade:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Align: =Align.Center
+                        Color: =If("INOVA" in Upper(ThisItem.Conc), corInova, corSaude)
+                        Fill: =If("INOVA" in Upper(ThisItem.Conc), corInovaFundo, corSaudeFundo)
+                        Font: =fontePadrao
+                        FontWeight: =FontWeight.Bold
+                        Height: =20
+                        OnSelect: =Select(Parent)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =7
+                        Text: =If(IsBlank(ThisItem.Conc), "SEM UNIDADE", If("INOVA" in Upper(ThisItem.Conc), "INOVA BH", "SAÚDE BH"))
+                        Visible: =IsBlank(cboConcessionaria.Selected.Value)
+                        Width: =74
+                        X: =lblRiNome.X + lblRiNome.Width + 8
+                        Y: =10
+                  - lblRiMotivos:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Color: =corTextoSecundario
+                        Font: =fontePadrao
+                        Height: =20
+                        OnSelect: =Select(Parent)
+                        Size: =8
+                        Text: =ThisItem.Etapa & If(IsBlank(ThisItem.Motivos), "", " · " & ThisItem.Motivos)
+                        Width: =Parent.TemplateWidth * 0.62
+                        X: =16
+                        Y: =32
+                  - lblRiBarraFundo:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Fill: =corBorda
+                        Height: =8
+                        OnSelect: =Select(Parent)
+                        RadiusBottomLeft: =4
+                        RadiusBottomRight: =4
+                        RadiusTopLeft: =4
+                        RadiusTopRight: =4
+                        Text: =""
+                        Width: =220
+                        X: =16
+                        Y: =60
+                  - lblRiBarra:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Fill: =corPrimaria
+                        Height: =8
+                        OnSelect: =Select(Parent)
+                        RadiusBottomLeft: =4
+                        RadiusBottomRight: =4
+                        RadiusTopLeft: =4
+                        RadiusTopRight: =4
+                        Text: =""
+                        Visible: =ThisItem.Progresso > 0
+                        Width: =Max(8, 220 * ThisItem.Progresso)
+                        X: =16
+                        Y: =60
+                  - lblRiProgresso:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Color: =corTextoSecundario
+                        Font: =fontePadrao
+                        Height: =20
+                        OnSelect: =Select(Parent)
+                        Size: =8
+                        Text: =Text(ThisItem.Progresso * 100, "0") & "% dos processos exigidos concluídos"
+                        Width: =260
+                        X: =244
+                        Y: =54
+                  - lblRiLiberacao:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Align: =Align.Right
+                        Color: =If(ThisItem.Atraso, corPerigo, corTextoSecundario)
+                        Font: =fontePadrao
+                        FontWeight: =If(ThisItem.Atraso, FontWeight.Bold, FontWeight.Normal)
+                        Height: =40
+                        OnSelect: =Select(Parent)
+                        Size: =8
+                        Text: |-
+                          ="Liberação prevista: " & If(IsBlank(ThisItem.LiberacaoPrevista), "—", Text(ThisItem.LiberacaoPrevista, "dd/mm/yyyy")) & Char(10) &
+                          "Prazo: " & If(IsBlank(ThisItem.PrazoLiberacao), "—", Text(ThisItem.PrazoLiberacao, "dd/mm/yyyy"))
+                        Width: =220
+                        Wrap: =true
+                        X: =lblRiBadge.X - Self.Width - 16
+                        Y: =20
+                  - lblRiBadge:
+                      Control: ModernText@1.0.0
+                      Properties:
+                        Align: =Align.Center
+                        Color: =LookUp(tblRisco, Nivel = ThisItem.Nivel).Texto
+                        Fill: =LookUp(tblRisco, Nivel = ThisItem.Nivel).Fundo
+                        Font: =fontePadrao
+                        FontWeight: =FontWeight.Bold
+                        Height: =32
+                        OnSelect: =Select(Parent)
+                        RadiusBottomLeft: =16
+                        RadiusBottomRight: =16
+                        RadiusTopLeft: =16
+                        RadiusTopRight: =16
+                        Size: =10
+                        Text: =ThisItem.Risco & " · " & ThisItem.Nivel
+                        VerticalAlign: =VerticalAlign.Middle
+                        Width: =96
+                        X: =Parent.TemplateWidth - Self.Width - 20
+                        Y: =24
+                  - rectRiLinha:
+                      Control: Rectangle@2.3.0
+                      Properties:
+                        Fill: =corBorda
+                        Height: =1
+                        OnSelect: =Select(Parent)
+                        Width: =Parent.TemplateWidth - 24
+                        X: =12
+                        Y: =Parent.TemplateHeight - 1
+                  - hv_galRiLista:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        Color: =RGBA(0, 0, 0, 0)
+                        Fill: =RGBA(0, 0, 0, 0)
+                        Height: =Parent.TemplateHeight
+                        HoverFill: =corHoverVeu
+                        OnSelect: =Select(Parent)
+                        PressedFill: =corPressVeu
+                        Text: =""
+                        Width: =Parent.TemplateWidth

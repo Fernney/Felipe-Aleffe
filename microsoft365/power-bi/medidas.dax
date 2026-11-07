@@ -1,0 +1,94 @@
+// ============================================================================
+// Central de Diligenciamento · Medidas DAX
+// Modelo: Terrenos[Nome do Terreno] 1 ── * Processos[Terreno]
+// (Exibição de modelo › arraste Terrenos[Nome do Terreno] até Processos[Terreno])
+// Crie uma tabela "Medidas" vazia (Inserir dados › OK) e adicione cada medida a ela.
+// ============================================================================
+
+Processos = COUNTROWS ( Processos )
+
+Abertos =
+CALCULATE ( [Processos], Processos[Status] IN { "Em andamento", "Aguardando", "Não iniciado" } )
+
+Concluídos = CALCULATE ( [Processos], Processos[Status] = "Concluído" )
+
+Bloqueados = CALCULATE ( [Processos], Processos[Status] = "Bloqueado" )
+
+% Concluído = DIVIDE ( [Concluídos], [Processos] )
+
+Protocolos vencidos =
+CALCULATE (
+    [Processos],
+    Processos[LimiteProtocolo] < TODAY (),
+    NOT Processos[Status] IN { "Concluído", "Bloqueado", "Em andamento" }
+)
+
+Protocolos em 30 dias =
+CALCULATE (
+    [Processos],
+    Processos[LimiteProtocolo] >= TODAY (),
+    Processos[LimiteProtocolo] <= TODAY () + 30,
+    NOT Processos[Status] IN { "Concluído", "Bloqueado", "Em andamento" }
+)
+
+Processos parados (60 dias) =
+CALCULATE (
+    [Processos],
+    Processos[Status] IN { "Em andamento", "Aguardando" },
+    Processos[Atualizacao] < NOW () - 60
+)
+
+Duração média (dias) =
+AVERAGEX (
+    FILTER ( Processos, Processos[Status] = "Concluído" && NOT ISBLANK ( Processos[DataInicio] ) && NOT ISBLANK ( Processos[DataTermino] ) ),
+    DATEDIFF ( Processos[DataInicio], Processos[DataTermino], DAY )
+)
+
+Liberação prevista =
+CALCULATE (
+    MAX ( Processos[ConclusaoPrevista] ),
+    Processos[Status] IN { "Em andamento", "Aguardando", "Não iniciado" }
+)
+
+Atrasado vs prazo =
+VAR prev = [Liberação prevista]
+VAR prazo = MAX ( Terrenos[Prazo de Liberação] )
+RETURN IF ( NOT ISBLANK ( prev ) && NOT ISBLANK ( prazo ) && prev > prazo, 1, 0 )
+
+// Índice de risco simplificado para o Power BI (o app calcula a versão completa)
+Índice de risco =
+VAR pontos =
+    [Bloqueados] * 20
+        + MIN ( 45, [Protocolos vencidos] * 15 )
+        + MIN ( 20, [Protocolos em 30 dias] * 5 )
+        + MIN ( 15, [Processos parados (60 dias)] * 5 )
+        + [Atrasado vs prazo] * 15
+RETURN MIN ( 100, pontos )
+
+Nível de risco =
+VAR r = [Índice de risco]
+RETURN SWITCH ( TRUE (), r >= 55, "Alto", r >= 25, "Médio", "Baixo" )
+
+// ---- Regra de cores dentro do relatório ------------------------------------
+// Use em Formatação › Cores › fx › Valor do campo = [Cor da unidade]
+// Sem filtro (ou as duas unidades) = JOPE; só INOVA = verde; só SAÚDE = roxo.
+Cor da unidade =
+VAR u = IF ( HASONEVALUE ( Terrenos[Unidade] ), VALUES ( Terrenos[Unidade] ), "JOPE" )
+RETURN SWITCH ( u, "INOVA BH", "#0D5A55", "SAÚDE BH", "#6E368C", "#6F3B8C" )
+
+Cor secundária da unidade =
+VAR u = IF ( HASONEVALUE ( Terrenos[Unidade] ), VALUES ( Terrenos[Unidade] ), "JOPE" )
+RETURN SWITCH ( u, "INOVA BH", "#95C11F", "SAÚDE BH", "#4C2C84", "#3266AF" )
+
+Cor do status =
+SWITCH (
+    SELECTEDVALUE ( Processos[Status] ),
+    "Concluído", "#12A9A2",
+    "Em andamento", "#3266AF",
+    "Aguardando", "#E0A33A",
+    "Bloqueado", "#D9534A",
+    "#B5B5B5"
+)
+
+Cor do risco =
+SWITCH ( [Nível de risco], "Alto", "#B3261E", "Médio", "#8A5300", "#0B6B66" )

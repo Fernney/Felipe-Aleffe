@@ -1,0 +1,22 @@
+<!-- Modelo do e-mail de alertas (Fluxo 1 · ação "Compor Html_INOVA / Html_SAUDE").
+     Troque {{COR}}, {{COR2}}, {{SPE}}, {{TOTAL}}, {{ALTAS}} e {{TABELA}} conforme o guia.
+     A faixa superior usa a paleta JOPE (geral); o título e a tabela usam a cor da SPE. -->
+<div style="margin:0;padding:24px;background:#F4F3F7;font-family:'Open Sans',Segoe UI,Arial,sans-serif;color:#2B2530">
+  <div style="max-width:860px;margin:0 auto">
+    <div style="height:6px;border-radius:6px;background:#6F3B8C;background:linear-gradient(90deg,#6F3B8C,#3266AF,#12A9A2)"></div>
+    <div style="background:#FFFFFF;border:1px solid #E4E1EA;border-radius:14px;margin-top:12px;padding:24px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#737373;text-transform:uppercase">Central de Diligenciamento · JOPE</div>
+      <h1 style="margin:6px 0 4px;font-size:20px;color:{{COR}}">Alertas e pendências — {{SPE}}</h1>
+      <p style="margin:0 0 16px;color:#5F5868">{{TOTAL}} pendência(s) · <b style="color:#B3261E">{{ALTAS}} de prioridade alta</b></p>
+      <div style="height:3px;width:80px;border-radius:3px;background:{{COR2}};margin-bottom:16px"></div>
+      <div style="font-size:13px">{{TABELA}}</div>
+      <p style="margin-top:20px;font-size:12px;color:#737373">Envio automático diário · Power Automate. Abra o app <b>Central de Diligenciamento</b> para ver detalhes e atualizar os processos.</p>
+    </div>
+  </div>
+</div>
+<!-- Dica: para estilizar a tabela gerada pelo "Criar tabela HTML", use no lugar de {{TABELA}}:
+replace(replace(replace(body('Tabela_INOVA'),
+  '<table>', '<table style="width:100%;border-collapse:collapse">'),
+  '<th>', '<th style="text-align:left;padding:8px;font-size:11px;text-transform:uppercase;color:#FFFFFF;background:#0D5A55">'),
+  '<td>', '<td style="padding:8px;border-bottom:1px solid #E4E1EA;vertical-align:top">')
+  (na Saúde, troque #0D5A55 por #6E368C) -->

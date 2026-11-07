@@ -1,0 +1,56 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.4",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "CENTRAL DE DILIGENCIAMENTO · JOPE",
+      "size": "Small",
+      "weight": "Bolder",
+      "color": "Accent",
+      "spacing": "None"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Resumo de alertas — @{formatDateTime(outputs('Hoje'), 'dd/MM/yyyy')}",
+      "size": "Large",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            { "type": "TextBlock", "text": "INOVA BH", "weight": "Bolder", "color": "Good" },
+            { "type": "TextBlock", "text": "@{length(body('Alertas_INOVA'))} pendência(s)", "size": "ExtraLarge", "weight": "Bolder", "spacing": "None" },
+            { "type": "TextBlock", "text": "@{length(body('Altas_INOVA'))} de prioridade alta", "color": "Attention", "spacing": "None" }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            { "type": "TextBlock", "text": "SAÚDE BH", "weight": "Bolder", "color": "Accent" },
+            { "type": "TextBlock", "text": "@{length(body('Alertas_SAUDE'))} pendência(s)", "size": "ExtraLarge", "weight": "Bolder", "spacing": "None" },
+            { "type": "TextBlock", "text": "@{length(body('Altas_SAUDE'))} de prioridade alta", "color": "Attention", "spacing": "None" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "text": "Os alertas de prioridade alta viraram tarefas no Planner. O detalhamento foi enviado por e-mail para cada SPE.",
+      "wrap": true,
+      "isSubtle": true,
+      "size": "Small"
+    }
+  ],
+  "actions": [
+    { "type": "Action.OpenUrl", "title": "Abrir o app", "url": "COLE_AQUI_O_LINK_DO_APP" },
+    { "type": "Action.OpenUrl", "title": "Abrir o Power BI", "url": "COLE_AQUI_O_LINK_DO_RELATORIO" }
+  ]
+}

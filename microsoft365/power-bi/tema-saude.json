@@ -1,0 +1,85 @@
+{
+  "name": "SAÚDE BH · Central de Diligenciamento",
+  "dataColors": [
+    "#6E368C",
+    "#4C2C84",
+    "#4D4D4D",
+    "#9A6FB3",
+    "#7E64B5",
+    "#C6A8D8",
+    "#8C8C8C",
+    "#3A1F5E"
+  ],
+  "foreground": "#2B2530",
+  "foregroundNeutralSecondary": "#5F5868",
+  "foregroundNeutralTertiary": "#737373",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F4F3F7",
+  "backgroundNeutral": "#E4E1EA",
+  "tableAccent": "#6E368C",
+  "good": "#0B6B66",
+  "neutral": "#8A5300",
+  "bad": "#B3261E",
+  "maximum": "#6E368C",
+  "center": "#4C2C84",
+  "minimum": "#F4F3F7",
+  "hyperlink": "#6E368C",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#E4E1EA"
+              }
+            },
+            "radius": 14
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ],
+        "title": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#2B2530"
+              }
+            },
+            "fontSize": 12,
+            "fontFamily": "Segoe UI Semibold"
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F4F3F7"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    }
+  }
+}

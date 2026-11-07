@@ -2,6 +2,8 @@
 
 Sistema web que substitui o app **Power Apps "Central de Diligenciamento"**: acompanha licenciamento urbano e ambiental, parcelamento do solo e baixa de construção dos terrenos das SPEs **INOVA BH** e **SAÚDE BH**.
 
+> **Usar só com o Microsoft 365 (Power Apps, Power Automate, Teams, Planner, Outlook, Power BI e Copilot Studio)?** Veja a pasta [`microsoft365/`](microsoft365/README.md): a mesma ideia montada sem servidor e sem administrador.
+
 Os dados **continuam no SharePoint**, nas mesmas listas do site `CentraldeDiligenciamento_R00`. O Power BI segue funcionando como hoje e ganha, como opção, uma API com os dados já tratados.
 
 ---
