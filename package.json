@@ -1,0 +1,38 @@
+{
+  "name": "central-diligenciamento",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Central de Diligenciamento JOPE — licenciamento, parcelamento, ambiental e baixa de construção sobre SharePoint",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.544.0",
+    "next": "^15.5.29",
+    "next-auth": "^4.24.15",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "recharts": "^2.15.4",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

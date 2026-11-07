@@ -1,0 +1,9 @@
+{
+  "name": "Central de Diligenciamento · JOPE",
+  "short_name": "Diligenciamento",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F3F7",
+  "theme_color": "#6F3B8C",
+  "icons": [{ "src": "/jope-logo.png", "sizes": "534x262", "type": "image/png" }]
+}

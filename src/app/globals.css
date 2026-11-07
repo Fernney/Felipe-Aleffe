@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Paleta JOPE (geral, menu) */
+:root {
+  --font-sans: "Open Sans";
+  --brand-1: 111 59 140;   /* #6F3B8C roxo */
+  --brand-2: 50 102 175;   /* #3266AF azul */
+  --brand-3: 18 169 162;   /* #12A9A2 verde-água */
+  --brand-muted: 115 115 115; /* #737373 cinza */
+  --bg: 244 243 247;
+  --card: 255 255 255;
+  --line: 228 225 234;
+  --ink: 43 37 48;
+  --ink-soft: 95 88 104;
+  color-scheme: light;
+}
+
+/* Paleta INOVA — somente quando o filtro INOVA BH está ativo */
+[data-brand="inova"] {
+  --brand-1: 13 90 85;     /* #0D5A55 verde escuro */
+  --brand-2: 149 193 31;   /* #95C11F verde claro */
+  --brand-3: 149 193 31;
+  --brand-muted: 112 111 111; /* #706F6F cinza */
+}
+
+/* Paleta SAÚDE — somente quando o filtro SAÚDE BH está ativo */
+[data-brand="saude"] {
+  --brand-1: 110 54 140;   /* #6E368C roxo */
+  --brand-2: 76 44 132;    /* #4C2C84 lilás */
+  --brand-3: 76 44 132;
+  --brand-muted: 77 77 77; /* #4D4D4D cinza */
+}
+
+[data-theme="dark"] {
+  --bg: 20 18 23;
+  --card: 31 28 36;
+  --line: 58 54 67;
+  --ink: 236 234 241;
+  --ink-soft: 179 173 188;
+  color-scheme: dark;
+}
+
+/* Itens de grid podem encolher (evita estouro horizontal no celular) */
+.grid > * { min-width: 0; }
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@layer components {
+  .cartao { @apply rounded-card border border-line bg-card shadow-card; }
+  .btn { @apply inline-flex items-center gap-2 rounded-[10px] px-3.5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primario { @apply btn bg-brand text-white hover:brightness-110; }
+  .btn-contorno { @apply btn border border-line bg-card text-ink hover:border-brand hover:text-brand; }
+  .btn-fantasma { @apply btn text-ink-soft hover:bg-brand/10 hover:text-brand; }
+  .campo { @apply w-full rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20; }
+  .rotulo { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-soft; }
+  .titulo-pagina { @apply text-2xl font-bold text-ink; }
+  .tabela th { @apply whitespace-nowrap border-b border-line px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-ink-soft; }
+  .tabela td { @apply border-b border-line px-3 py-2.5 align-middle text-sm; }
+  .tabela tbody tr { @apply transition hover:bg-brand/5; }
+}
+
+@media print {
+  aside, header, .nao-imprimir { display: none !important; }
+  body { background: white; }
+}
