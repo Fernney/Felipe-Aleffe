@@ -1,9 +1,10 @@
-// Provedor SharePoint via Microsoft Graph (permissão de aplicativo).
+// Provedor SharePoint via Microsoft Graph.
 // Lê e grava nas mesmas listas do site CentraldeDiligenciamento_R00 usadas
 // pelo Power Apps — o Power BI continua lendo as listas normalmente.
+// O token vem do login do usuário (modo delegado) ou do próprio aplicativo
+// (modo aplicativo) — ver src/lib/data/tokens.ts.
 //
-// Variáveis de ambiente: SP_TENANT_ID, SP_CLIENT_ID, SP_CLIENT_SECRET,
-// SP_SITE (ex.: transpes.sharepoint.com:/sites/CentraldeDiligenciamento_R00)
+// Variáveis de ambiente: SP_SITE (ex.: transpes.sharepoint.com:/sites/CentraldeDiligenciamento_R00)
 // e opcionalmente SP_CACHE_SECONDS (padrão 60).
 
 import "server-only";
@@ -81,35 +82,13 @@ function perfil(v: unknown): Perfil {
 }
 
 // ---------- cliente Graph ----------
-class Graph {
-  private token: { valor: string; expira: number } | null = null;
-  private siteId: string | null = null;
+const siteIds = new Map<string, string>();
 
+class Graph {
   constructor(
-    private tenant: string,
-    private clientId: string,
-    private secret: string,
+    private obterToken: () => Promise<string>,
     private site: string,
   ) {}
-
-  private async obterToken(): Promise<string> {
-    if (this.token && this.token.expira > Date.now() + 60_000) return this.token.valor;
-    const corpo = new URLSearchParams({
-      client_id: this.clientId,
-      client_secret: this.secret,
-      scope: "https://graph.microsoft.com/.default",
-      grant_type: "client_credentials",
-    });
-    const r = await fetch(`https://login.microsoftonline.com/${this.tenant}/oauth2/v2.0/token`, {
-      method: "POST",
-      body: corpo,
-      cache: "no-store",
-    });
-    if (!r.ok) throw new Error(`Falha ao autenticar no Microsoft Entra ID (${r.status})`);
-    const j = (await r.json()) as { access_token: string; expires_in: number };
-    this.token = { valor: j.access_token, expira: Date.now() + j.expires_in * 1000 };
-    return j.access_token;
-  }
 
   async req<T>(caminho: string, init: RequestInit = {}, tentativa = 0): Promise<T> {
     const url = caminho.startsWith("https://") ? caminho : `https://graph.microsoft.com/v1.0${caminho}`;
@@ -138,9 +117,11 @@ class Graph {
   }
 
   async site_(): Promise<string> {
-    if (this.siteId) return this.siteId;
+    const cache = siteIds.get(this.site);
+    if (cache) return cache;
     const s = await this.req<{ id: string }>(`/sites/${this.site}`);
-    return (this.siteId = s.id);
+    siteIds.set(this.site, s.id);
+    return s.id;
   }
 
   async itens(listaId: string): Promise<Item[]> {
@@ -227,26 +208,33 @@ function camposDeAlteracao(modulo: ModuloId, alt: AlteracaoProcesso): Campos {
 }
 
 // ---------- provedor ----------
-const cache = globalThis as unknown as { __baseSp?: { base: Base; em: number } };
+// Cache por usuário (no modo delegado cada pessoa lê com as próprias permissões).
+const g_ = globalThis as unknown as { __cacheSp?: Map<string, { base: Base; em: number }> };
+const cache = (g_.__cacheSp ??= new Map());
 
 export class ProvedorSharePoint implements Provedor {
   readonly origem = "sharepoint" as const;
   private g: Graph;
   private ttl = Number(process.env.SP_CACHE_SECONDS ?? 60) * 1000;
 
-  constructor() {
-    const { SP_TENANT_ID, SP_CLIENT_ID, SP_CLIENT_SECRET, SP_SITE } = process.env;
-    if (!SP_TENANT_ID || !SP_CLIENT_ID || !SP_CLIENT_SECRET || !SP_SITE)
-      throw new Error("Configure SP_TENANT_ID, SP_CLIENT_ID, SP_CLIENT_SECRET e SP_SITE.");
-    this.g = new Graph(SP_TENANT_ID, SP_CLIENT_ID, SP_CLIENT_SECRET, SP_SITE);
+  /**
+   * @param obterToken token do Graph (do usuário logado ou do aplicativo)
+   * @param chaveCache identifica de quem são os dados em cache
+   * @param delegado true quando age em nome do usuário (e-mail sai da caixa dele)
+   */
+  constructor(obterToken: () => Promise<string>, private chaveCache: string, private delegado: boolean) {
+    const site = process.env.SP_SITE;
+    if (!site) throw new Error("Configure SP_SITE (ex.: transpes.sharepoint.com:/sites/CentraldeDiligenciamento_R00).");
+    this.g = new Graph(obterToken, site);
   }
 
   private invalidar() {
-    cache.__baseSp = undefined;
+    cache.clear(); // uma gravação afeta o que todos veem
   }
 
   async carregar(): Promise<Base> {
-    if (cache.__baseSp && Date.now() - cache.__baseSp.em < this.ttl) return structuredClone(cache.__baseSp.base);
+    const c = cache.get(this.chaveCache);
+    if (c && Date.now() - c.em < this.ttl) return structuredClone(c.base);
 
     const [terrenosR, fluxosR, endR, ibedR, usuR, condR, relR, ltLicR, ltParR, ...modsR] = await Promise.all([
       this.g.itens(LISTAS.terrenos),
@@ -359,7 +347,7 @@ export class ProvedorSharePoint implements Provedor {
       geradoEm: new Date().toISOString(),
       origem: "sharepoint",
     });
-    cache.__baseSp = { base, em: Date.now() };
+    cache.set(this.chaveCache, { base, em: Date.now() });
     return structuredClone(base);
   }
 
@@ -420,11 +408,15 @@ export class ProvedorSharePoint implements Provedor {
     });
   }
 
-  /** Envia e-mail pelo Graph (caixa definida em MAIL_SENDER). */
+  /** Envia e-mail pelo Graph: da caixa de quem está logado (delegado) ou de MAIL_SENDER (aplicativo). */
   async enviarEmail(para: string[], assunto: string, html: string) {
-    const remetente = process.env.MAIL_SENDER;
-    if (!remetente) throw new Error("Configure MAIL_SENDER para enviar e-mails.");
-    await this.g.req(`/users/${encodeURIComponent(remetente)}/sendMail`, {
+    let caminho = "/me/sendMail";
+    if (!this.delegado) {
+      const remetente = process.env.MAIL_SENDER;
+      if (!remetente) throw new Error("Configure MAIL_SENDER para enviar e-mails.");
+      caminho = `/users/${encodeURIComponent(remetente)}/sendMail`;
+    }
+    await this.g.req(caminho, {
       method: "POST",
       body: JSON.stringify({
         message: {

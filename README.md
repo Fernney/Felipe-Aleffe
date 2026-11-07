@@ -90,38 +90,74 @@ npm start
 
 ## Ligar no SharePoint
 
-1. No **Microsoft Entra ID**, crie um *App registration*.
-   - **Permissões de aplicativo do Microsoft Graph:** `Sites.Selected` (recomendado; depois conceda escrita só no site `CentraldeDiligenciamento_R00`) ou `Sites.ReadWrite.All`. Acrescente `Mail.Send` se o sistema for enviar os e-mails.
-   - **Login dos usuários:** adicione a URL de redirecionamento `https://SEU-ENDERECO/api/auth/callback/azure-ad`.
-2. Preencha o `.env.local`, ou as variáveis do servidor:
+O sistema tem dois modos de acesso, escolhidos em `SP_AUTH_MODE`:
+
+| | **Delegado** (padrão) | **Aplicativo** |
+|---|---|---|
+| Como acessa | Com o login Microsoft de quem está usando | Com acesso próprio do sistema |
+| Precisa de administrador? | **Não**, se a organização permitir que o usuário aprove as permissões | Sim (consentimento + liberação do site) |
+| O que cada pessoa vê | O que ela já vê no SharePoint | Tudo do site |
+| E-mail de alertas | Sai da caixa de quem clicou em "Enviar" | Sai da caixa `MAIL_SENDER` |
+| Resumo diário automático e API do Power BI | Não (exigem alguém logado) | Sim |
+
+### Modo delegado (sem administrador)
+
+1. Acesse https://entra.microsoft.com com a sua conta corporativa.
+2. Vá em **Aplicativos › Registros de aplicativo › Novo registro**.
+   - **Nome:** Central de Diligenciamento
+   - **Tipo de conta:** *Somente contas deste diretório organizacional*
+   - **URI de redirecionamento:** tipo **Web**, endereço `http://localhost:3000/api/auth/callback/azure-ad`
+3. Anote o **ID do aplicativo (cliente)** e o **ID do diretório (locatário)**.
+4. Em **Certificados e segredos › Novo segredo do cliente**, crie um segredo e copie o **Valor** (ele aparece uma vez só).
+5. Em **Permissões de API › Adicionar › Microsoft Graph › Permissões delegadas**, adicione:
+   `User.Read`, `offline_access`, `openid`, `profile`, `email`, `Sites.ReadWrite.All`, `Mail.Send`.
+   Não clique em "conceder consentimento do administrador": você aprova as suas no primeiro login.
+6. Preencha o `.env.local`:
 
    ```env
    DATA_PROVIDER=sharepoint
-   SP_TENANT_ID=...
-   SP_CLIENT_ID=...
-   SP_CLIENT_SECRET=...
+   SP_AUTH_MODE=delegado
    SP_SITE=transpes.sharepoint.com:/sites/CentraldeDiligenciamento_R00
-   AZURE_AD_CLIENT_ID=...
-   AZURE_AD_CLIENT_SECRET=...
-   AZURE_AD_TENANT_ID=...
-   MAIL_SENDER=caixa-que-envia@empresa.com.br
+   AZURE_AD_CLIENT_ID=<ID do aplicativo>
+   AZURE_AD_TENANT_ID=<ID do diretório>
+   AZURE_AD_CLIENT_SECRET=<valor do segredo>
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=<openssl rand -base64 32>
    ```
 
-Os IDs das listas e os nomes internos das colunas foram extraídos do próprio app e estão em `src/lib/domain/modulos.ts`, `src/lib/data/sharepoint.ts` e `docs/sharepoint-schema.json`. **Não é preciso criar nem alterar nenhuma lista.**
+7. Rode `npm run dev`, clique em **Entrar com conta Microsoft** e aceite a tela de permissões.
 
-A leitura fica em cache por `SP_CACHE_SECONDS` (60 s por padrão) e é renovada a cada gravação. As requisições respeitam o limite do SharePoint, com nova tentativa em caso de 429 ou 503.
+Se a Microsoft mostrar **"Aprovação necessária"** / *"Need admin approval"*, a organização bloqueou o consentimento pelo usuário. Aí é preciso pedir ao TI que aprove o app; muitas vezes a própria tela tem um botão para enviar a solicitação. Também é possível que a opção *Novo registro* esteja desabilitada para não administradores; nesse caso, o TI faz o registro e envia os três valores do passo 3 e 4.
+
+Cada pessoa só precisa estar cadastrada na lista **Usuário do Sistema**, com o e-mail igual ao login, para receber o perfil correto.
+
+### Modo aplicativo (com administrador)
+
+É o mesmo registro, com estas diferenças:
+- Permissões **de aplicativo** `Sites.Selected` (e `Mail.Send`, se for enviar e-mail), com **consentimento do administrador**.
+- O administrador do SharePoint libera o site para o app:
+
+  ```powershell
+  Grant-PnPAzureADAppSitePermission -AppId <ID do aplicativo> -DisplayName "Central de Diligenciamento" -Permissions Write -Site https://transpes.sharepoint.com/sites/CentraldeDiligenciamento_R00
+  ```
+
+- No `.env.local`: `SP_AUTH_MODE=aplicativo`, além de `SP_TENANT_ID`, `SP_CLIENT_ID`, `SP_CLIENT_SECRET` e `MAIL_SENDER`.
+
+### Detalhes
+
+Os IDs das listas e os nomes internos das colunas foram extraídos do próprio app e estão em `src/lib/domain/modulos.ts`, `src/lib/data/sharepoint.ts` e `docs/sharepoint-schema.json`. **Não é preciso criar nem alterar nenhuma lista.** A leitura fica em cache por `SP_CACHE_SECONDS` (60 s por padrão), separada por usuário no modo delegado, e é renovada a cada gravação. As requisições respeitam o limite do SharePoint, com nova tentativa em caso de 429 ou 503.
 
 ## Power BI
 
 - **Opção 1 (nada muda):** continue lendo as listas do SharePoint. O sistema grava nas mesmas listas.
-- **Opção 2 (recomendada):** use a API `GET /api/bi/<dataset>` com o cabeçalho `Authorization: Bearer <BI_API_TOKEN>`.
+- **Opção 2 (recomendada, exige o modo aplicativo):** use a API `GET /api/bi/<dataset>` com o cabeçalho `Authorization: Bearer <BI_API_TOKEN>`.
   - Datasets: `consolidado`, `alertas`, `processos`, `andamentos`, `terrenos`, `condicionantes` e `modulo?modulo=<id>`.
   - Parâmetros: `unidade=todas|inova|saude` e `formato=json|csv`.
   - O código Power Query (M) pronto está na tela **Relatórios & Power BI**.
 
 ## Alertas automáticos
 
-Agende uma chamada diária (Azure Logic Apps, cron do servidor, GitHub Actions etc.), trocando `$CRON_SECRET` e o endereço pelos seus:
+Disponível no modo aplicativo. Agende uma chamada diária (Azure Logic Apps, cron do servidor, GitHub Actions etc.), trocando `$CRON_SECRET` e o endereço pelos seus:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://SEU-ENDERECO/api/cron/alertas

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { carregarPainel } from "@/lib/data";
+import { carregarPainel, semUsuarioDisponivel } from "@/lib/data";
 import { parseFiltro } from "@/lib/domain/regras";
 import { montarTabela, paraCsv } from "@/lib/relatorios";
 
@@ -19,6 +19,11 @@ function autorizado(req: Request): boolean {
 
 export async function GET(req: Request, { params }: { params: Promise<{ dataset: string }> }) {
   if (!autorizado(req)) return Response.json({ erro: "Token inválido ou BI_API_TOKEN não configurado" }, { status: 401 });
+  if (!semUsuarioDisponivel())
+    return Response.json(
+      { erro: "Com SP_AUTH_MODE=delegado esta rotina não roda sem alguém logado. Use o envio/exportação pela tela ou peça ao TI o modo aplicativo." },
+      { status: 503 },
+    );
   const { dataset } = await params;
   const url = new URL(req.url);
   const painel = await carregarPainel(parseFiltro(url.searchParams.get("unidade") ?? undefined));

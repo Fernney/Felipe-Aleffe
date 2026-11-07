@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { carregarPainel, obterProvedor } from "@/lib/data";
+import { carregarPainel, semUsuarioDisponivel, obterProvedor } from "@/lib/data";
 import { fmtDataHora } from "@/lib/domain/datas";
 import { alertasDaSpe, DESTINOS, htmlAlertas } from "@/lib/email";
 
@@ -13,6 +13,11 @@ export async function GET(req: Request) {
   if (segredo.length < 16 || recebido.length !== segredo.length || !timingSafeEqual(recebido, Buffer.from(segredo)))
     return Response.json({ erro: "Não autorizado" }, { status: 401 });
 
+  if (!semUsuarioDisponivel())
+    return Response.json(
+      { erro: "Com SP_AUTH_MODE=delegado esta rotina não roda sem alguém logado. Use o envio/exportação pela tela ou peça ao TI o modo aplicativo." },
+      { status: 503 },
+    );
   const { alertas } = await carregarPainel("todas");
   const p = await obterProvedor();
   const urlBase = process.env.NEXTAUTH_URL ?? new URL(req.url).origin;

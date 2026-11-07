@@ -4,19 +4,34 @@ import { consolidar, filtrarBase, gerarAlertas, indicadores } from "@/lib/domain
 import type { FiltroUnidade } from "@/lib/domain/types";
 import { ProvedorDemo } from "./demo";
 import type { Provedor } from "./provider";
+import { emailDoUsuarioAtual, modoSharePoint, tokenDoAplicativo, tokenDoUsuarioAtual } from "./tokens";
 
-let provedor: Provedor | null = null;
+let demo: ProvedorDemo | null = null;
+let aplicativo: Provedor | null = null;
 
-/** DATA_PROVIDER=sharepoint usa o Microsoft Graph; qualquer outro valor usa a base de demonstração. */
+export const usaSharePoint = () => process.env.DATA_PROVIDER === "sharepoint";
+
+/**
+ * DATA_PROVIDER=sharepoint usa o Microsoft Graph; qualquer outro valor usa a base de demonstração.
+ * No modo delegado (padrão) o provedor age com o login de quem fez a requisição.
+ */
 export async function obterProvedor(): Promise<Provedor> {
-  if (provedor) return provedor;
-  if (process.env.DATA_PROVIDER === "sharepoint") {
-    const { ProvedorSharePoint } = await import("./sharepoint");
-    provedor = new ProvedorSharePoint();
-  } else {
-    provedor = new ProvedorDemo();
-  }
-  return provedor;
+  if (!usaSharePoint()) return (demo ??= new ProvedorDemo());
+  const { ProvedorSharePoint } = await import("./sharepoint");
+  if (modoSharePoint() === "aplicativo") return (aplicativo ??= new ProvedorSharePoint(tokenDoAplicativo, "aplicativo", false));
+  return new ProvedorSharePoint(tokenDoUsuarioAtual, `usuario:${await emailDoUsuarioAtual()}`, true);
+}
+
+/** Provedor com um token já conhecido (usado no momento do login, antes de existir cookie). */
+export async function obterProvedorComToken(token: string, email: string): Promise<Provedor> {
+  if (!usaSharePoint()) return (demo ??= new ProvedorDemo());
+  const { ProvedorSharePoint } = await import("./sharepoint");
+  return new ProvedorSharePoint(async () => token, `usuario:${email.toLowerCase()}`, true);
+}
+
+/** Rotinas sem usuário logado (cron, API do Power BI) só funcionam com demo ou modo aplicativo. */
+export function semUsuarioDisponivel(): boolean {
+  return !usaSharePoint() || modoSharePoint() === "aplicativo";
 }
 
 /** Carrega a base, aplica o filtro de unidade e calcula alertas, consolidado e indicadores. */
